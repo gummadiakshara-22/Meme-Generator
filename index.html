@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: rgb(89, 193, 211);
+        }
+        #meme-container {
+            position: relative;
+            display: inline-block;
+            width: 400px;
+            height: auto;
+        }
+        #meme-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .draggable {
+            position: absolute;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px black;
+            cursor: grab;
+            user-select: none;
+        }
+        #controls {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Meme Generator</h1>
+    
+    <label for="template-selector">Choose a template:</label>
+    <select id="template-selector">
+        <option value="https://i.imgflip.com/30b1gx.jpg">Drake</option>
+        <option value="https://i.imgflip.com/1o00in.jpg">Expanding Brain</option>
+        <option value="https://i.imgflip.com/1ur9b0.jpg">Distracted Boyfriend</option>
+        <option value="https://i.imgflip.com/1g8my4.jpg">Two Buttons</option>
+        <option value="https://i.imgflip.com/24y43o.jpg">Change My Mind</option>
+        <option value="https://i.imgflip.com/2kbn1e.jpg">Surprised Pikachu</option>
+        <option value="https://i.imgflip.com/1otk96.jpg">Mocking SpongeBob</option>
+    </select>
+
+    <br><br>
+    <input type="file" id="upload-image" accept="image/*">
+    <br><br>
+
+    <div id="meme-container">
+        <img id="meme-image" src="https://i.imgflip.com/30b1gx.jpg" alt="Meme Template">
+    </div>
+
+    <br>
+    <button onclick="addText()">Add New Text</button>
+    <br><br>
+    
+    <div id="text-controls"></div>
+
+    <br><br>
+    <button onclick="downloadMeme()">Download Meme</button>
+
+    <script>
+        const memeContainer = document.getElementById('meme-container');
+        const memeImage = document.getElementById('meme-image');
+        const templateSelector = document.getElementById('template-selector');
+        const uploadImage = document.getElementById('upload-image');
+        const textControls = document.getElementById('text-controls');
+        let textCounter = 0; 
+
+        function addText() {
+            textCounter++;
+            const textElement = document.createElement('div');
+            textElement.className = 'draggable';
+            textElement.innerText = Text ;{textCounter};
+            textElement.style.top = '50px';
+            textElement.style.left = '50%';
+            textElement.style.transform = 'translateX(-50%)';
+
+            makeDraggable(textElement);
+            memeContainer.appendChild(textElement);
+
+            // Create input fields for customization
+            const controlDiv = document.createElement('div');
+            controlDiv.innerHTML = `
+                <input type="text" placeholder="Edit text" oninput="updateText(${textCounter}, this)">
+                <label>Font Size:</label>
+                <input type="number" value="24" min="10" max="50" oninput="updateFontSize(${textCounter}, this)">
+                <label>Color:</label>
+                <input type="color" value="#ffffff" oninput="updateColor(${textCounter}, this)">
+                <button onclick="removeText(${textCounter})">Remove</button>
+            `;
+            controlDiv.setAttribute('id', `control-${textCounter}`);
+            textControls.appendChild(controlDiv);
+
+            textElement.setAttribute('data-id', textCounter);
+        }
+
+        function makeDraggable(element) {
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            element.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - element.getBoundingClientRect().left;
+                offsetY = e.clientY - element.getBoundingClientRect().top;
+                element.style.cursor = "grabbing";
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    let newX = e.clientX - offsetX;
+                    let newY = e.clientY - offsetY;
+
+                    let rect = memeContainer.getBoundingClientRect();
+
+                    if (newX >= rect.left && newX <= rect.right - element.offsetWidth) {
+                        element.style.left = `${newX - rect.left}px`;
+                    }
+                    if (newY >= rect.top && newY <= rect.bottom - element.offsetHeight) {
+                        element.style.top = `${newY - rect.top}px`;
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                element.style.cursor = "grab";
+            });
+        }
+
+        function updateText(id, input) {
+            const textElement = document.querySelector(`.draggable[data-id="${id}"]`);
+            if (textElement) textElement.innerText = input.value;
+        }
+
+        function updateFontSize(id, input) {
+            const textElement = document.querySelector(`.draggable[data-id="${id}"]`);
+            if (textElement) textElement.style.fontSize = input.value + 'px';
+        }
+
+        function updateColor(id, input) {
+            const textElement = document.querySelector(".draggable[data-id='${id}']");
+            if (textElement) textElement.style.color = input.value;
+        }
+
+        function removeText(id) {
+            const textElement = document.querySelector(`.draggable[data-id="${id}"]`);
+            const controlDiv = document.getElementById(`control-${id}`);
+
+            if (textElement) memeContainer.removeChild(textElement);
+            if (controlDiv) textControls.removeChild(controlDiv);
+        }
+
+        templateSelector.addEventListener('change', () => {
+            memeImage.src = templateSelector.value;
+        });
+
+        uploadImage.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    memeImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function downloadMeme() {
+            const tempImg = new Image();
+            tempImg.src = memeImage.src;
+            tempImg.crossOrigin = "anonymous"; 
+
+            tempImg.onload = function() {
+                html2canvas(memeContainer, { useCORS: true }).then(canvas => {
+                    let link = document.createElement('a');
+                    link.href = canvas.toDataURL("image/png");
+                    link.download = 'meme.png';
+                    link.click();
+                });
+            };
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
